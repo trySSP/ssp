@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef, useMemo } from 'react'
 import { storage } from '@/utils/storage'
 
 
@@ -172,41 +172,51 @@ export function DocumentProvider({ children }) {
 
   // Load workspace on mount
   useEffect(() => {
-    const saved = storage.load(WORKSPACE_KEY)
-    if (saved && Object.keys(saved.documents || {}).length > 0) {
-      dispatch({
-        type: ACTIONS.LOAD_WORKSPACE,
-        payload: {
-          startupName: saved.startupName || initialState.startupName,
-          documents: saved.documents || {},
-          files: saved.files || {},
-          activeItemType: saved.activeItemType || (saved.activeDocId ? 'document' : null),
-          activeDocId: saved.activeDocId || null,
-          activeFileId: saved.activeFileId || null
-        }
-      })
-    } else {
-      // Create default Problem Statement document on first load
-      const defaultDocId = `doc-${Date.now()}`
-      dispatch({
-        type: ACTIONS.LOAD_WORKSPACE,
-        payload: {
-          ...initialState,
-          documents: {
-            [defaultDocId]: {
-              id: defaultDocId,
-              title: 'Problem Statement',
-              icon: 'Target',
-              content: getArtifactTemplate('problem-statement')?.defaultContent || null,
-              createdAt: new Date().toISOString()
+    async function initWorkspace() {
+      try {
+        await storage.init()
+        const saved = await storage.load(WORKSPACE_KEY)
+        
+        if (saved && Object.keys(saved.documents || {}).length > 0) {
+          dispatch({
+            type: ACTIONS.LOAD_WORKSPACE,
+            payload: {
+              startupName: saved.startupName || initialState.startupName,
+              documents: saved.documents || {},
+              files: saved.files || {},
+              activeItemType: saved.activeItemType || (saved.activeDocId ? 'document' : null),
+              activeDocId: saved.activeDocId || null,
+              activeFileId: saved.activeFileId || null
             }
-          },
-          activeItemType: 'document',
-          activeDocId: defaultDocId,
-          activeFileId: null
+          })
+        } else {
+          // Create default Problem Statement document on first load
+          const defaultDocId = `doc-${Date.now()}`
+          dispatch({
+            type: ACTIONS.LOAD_WORKSPACE,
+            payload: {
+              ...initialState,
+              documents: {
+                [defaultDocId]: {
+                  id: defaultDocId,
+                  title: 'Problem Statement',
+                  icon: 'Target',
+                  content: getArtifactTemplate('problem-statement')?.defaultContent || null,
+                  createdAt: new Date().toISOString()
+                }
+              },
+              activeItemType: 'document',
+              activeDocId: defaultDocId,
+              activeFileId: null
+            }
+          })
         }
-      })
+      } catch (err) {
+        console.error("Failed to initialize workspace", err)
+      }
     }
+    
+    initWorkspace()
   }, [])
 
   // Debounced save function
@@ -217,12 +227,19 @@ export function DocumentProvider({ children }) {
 
     dispatch({ type: ACTIONS.SET_SAVE_STATUS, payload: 'saving' })
 
-    saveTimeoutRef.current = setTimeout(() => {
-      const success = storage.save(WORKSPACE_KEY, {
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Create a snapshot of the state to save
+      // We pass the current state implicitly by relying on the 'state' from closure? 
+      // NO, 'state' in this scope might be stale if not careful.
+      // But 'saveWorkspace' is recreated on state change, so it sees fresh state.
+      
+      const success = await storage.save(WORKSPACE_KEY, {
         startupName: state.startupName,
         documents: state.documents,
         files: state.files,
-        activeDocId: state.activeDocId
+        activeDocId: state.activeDocId,
+        activeFileId: state.activeFileId,
+        activeItemType: state.activeItemType
       })
 
       dispatch({
@@ -234,14 +251,14 @@ export function DocumentProvider({ children }) {
         dispatch({ type: ACTIONS.SET_SAVE_STATUS, payload: 'idle' })
       }, 2000)
     }, 500)
-  }, [state.startupName, state.documents, state.files, state.activeDocId])
+  }, [state.startupName, state.documents, state.files, state.activeDocId, state.activeFileId, state.activeItemType])
 
   // Auto-save on state change
   useEffect(() => {
     if (state.isLoaded) {
       saveWorkspace()
     }
-  }, [state.documents, state.files, state.startupName, state.isLoaded, saveWorkspace])
+  }, [saveWorkspace, state.isLoaded])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -252,31 +269,37 @@ export function DocumentProvider({ children }) {
     }
   }, [])
 
-  // Get active document
-  const activeDocument = state.activeDocId ? state.documents[state.activeDocId] : null
+  // Get active document - Memoized to prevent frequent lookups if not changed
+  const activeDocument = useMemo(() => 
+    state.activeDocId ? state.documents[state.activeDocId] : null
+  , [state.activeDocId, state.documents])
 
   // Calculate coverage for active document
   // Calculate total coverage across all documents
-  const coverage = Object.values(state.documents).reduce((acc, doc) => {
-    // Calculate individual max 100% just in case, or just sum chars?
-    // Better to sum chars then calculate percentage against a larger target or same target?
-    // If target is "10k chars to be happy", then sum of chars against 10k.
-    return acc + getCharCount(doc.content)
-  }, 0)
-  
-  // Calculate percentage against target (using same default as before for now)
-  // We can treat the target as "Workspace Target"
-  const coveragePercentage = Math.min(100, Math.round((coverage / 10000) * 100))
+  // Memoized: This was a performance bottleneck (O(N) on every render)
+  const { coveragePercentage } = useMemo(() => {
+    const totalChars = Object.values(state.documents).reduce((acc, doc) => {
+      return acc + getCharCount(doc.content)
+    }, 0)
+    
+    // Calculate percentage against target (10k chars)
+    const percentage = Math.min(100, Math.round((totalChars / 10000) * 100))
+    return { coveragePercentage: percentage }
+  }, [state.documents])
 
-  // Get documents as sorted array
-  const documentList = Object.values(state.documents).sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-  )
+  // Get documents as sorted array - Memoized
+  const documentList = useMemo(() => 
+    Object.values(state.documents).sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    )
+  , [state.documents])
 
-  // Get files as sorted array
-  const fileList = Object.values(state.files).sort(
-    (a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt)
-  )
+  // Get files as sorted array - Memoized
+  const fileList = useMemo(() => 
+    Object.values(state.files).sort(
+      (a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt)
+    )
+  , [state.files])
 
   // Actions
   const setStartupName = useCallback((name) => {
@@ -350,11 +373,13 @@ export function DocumentProvider({ children }) {
   }, [])
 
   // Get active file
-  const activeFile = state.activeFileId ? state.files[state.activeFileId] : null
+  const activeFile = useMemo(() => 
+    state.activeFileId ? state.files[state.activeFileId] : null
+  , [state.activeFileId, state.files])
 
-  const value = {
+  const value = useMemo(() => ({
     startupName: state.startupName,
-    documents: state.documents,
+    documents: state.documents, // Potentially heavy, but needed for stats?
     documentList,
     files: state.files,
     fileList,
@@ -375,7 +400,30 @@ export function DocumentProvider({ children }) {
     deleteDocument,
     uploadFile,
     deleteFile
-  }
+  }), [
+    state.startupName,
+    state.documents,
+    state.files,
+    state.activeItemType,
+    state.activeDocId,
+    state.activeFileId,
+    state.saveStatus,
+    state.isLoaded,
+    documentList,
+    fileList,
+    activeDocument,
+    activeFile,
+    coveragePercentage,
+    setStartupName,
+    createDocument,
+    updateDocumentContent,
+    updateDocumentTitle,
+    setActiveDocument,
+    setActiveFile,
+    deleteDocument,
+    uploadFile,
+    deleteFile
+  ])
 
   return (
     <DocumentContext.Provider value={value}>

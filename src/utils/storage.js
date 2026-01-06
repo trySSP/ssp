@@ -1,85 +1,116 @@
 /**
- * Storage Adapter
+ * Storage Adapter - IndexedDB Implementation
  * 
- * Abstracts localStorage operations for easy API replacement later.
+ * Uses idb-keyval for async storage to support large files (PDFs/Images).
+ * Includes auto-migration from localStorage on first load.
  */
 
+import { get, set, del, keys } from 'idb-keyval'
+
 const STORAGE_PREFIX = 'apricity'
+
+// Helper to keep keys consistent
+const getKey = (id) => id.startsWith(STORAGE_PREFIX) ? id : `${STORAGE_PREFIX}-${id}`
+
+/**
+ * Migration: Move data from localStorage to IndexedDB
+ */
+async function migrateFromLocalStorage() {
+  try {
+    const migratedKeys = []
+    
+    // Find all app keys in localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(STORAGE_PREFIX)) {
+        try {
+          // Read from LS
+          const data = JSON.parse(localStorage.getItem(key))
+          
+          // Write to IDB
+          await set(key, data)
+          migratedKeys.push(key)
+        } catch (e) {
+          console.error('Migration failed for key:', key, e)
+        }
+      }
+    }
+
+    // Clean up LS after successful migration
+    migratedKeys.forEach(key => localStorage.removeItem(key))
+    if (migratedKeys.length > 0) {
+      console.log(`Migrated ${migratedKeys.length} items from localStorage to IndexedDB`)
+    }
+  } catch (error) {
+    console.error('Migration critical error:', error)
+  }
+}
 
 export const storage = {
   /**
    * Save data to storage
+   * @param {string} key 
+   * @param {any} data 
    */
-  save(key, data) {
+  async save(key, data) {
     try {
-      const storageKey = key.startsWith(STORAGE_PREFIX) ? key : `${STORAGE_PREFIX}-${key}`
-      localStorage.setItem(storageKey, JSON.stringify({
+      const storageKey = getKey(key)
+      await set(storageKey, {
         ...data,
         lastModified: new Date().toISOString()
-      }))
+      })
       return true
     } catch (error) {
-      console.error('Failed to save:', error)
+      console.error('Failed to save to IDB:', error)
       return false
     }
   },
 
   /**
    * Load document from storage
+   * @param {string} startupId 
    */
-  load(startupId) {
+  async load(startupId) {
+    // Attempt migration on first load access or just run it?
+    // Running it here ensures content is available if it was just in LS.
+    // However, for performance, we might want to do this only once globally.
+    // For simplicity/robustness, checking if we find nothing in IDB but something in LS is a good strategy,
+    // but explicit migration function is clearer.
+    // We'll trust the Context to call init/migration or just do it lazily here?
+    // Let's keep it simple: The Context will likely just call 'load', so we can't easily hook in.
+    // BUT, we can run migration once at module level or assume `load` might need to check LS fallback.
+    
+    // Let's add a specialized init method or just auto-migrate if data is missing?
+    // Safer: Allow Context to trigger init.
+    
     try {
-      const key = `${STORAGE_PREFIX}-${startupId}`
-      const data = localStorage.getItem(key)
-      return data ? JSON.parse(data) : null
+      const storageKey = getKey(startupId)
+      const data = await get(storageKey)
+      return data || null
     } catch (error) {
-      console.error('Failed to load:', error)
+      console.error('Failed to load from IDB:', error)
       return null
     }
   },
 
   /**
-   * Delete document from storage
+   * Initialize storage (run migration)
    */
-  delete(startupId) {
-    try {
-      const key = `${STORAGE_PREFIX}-${startupId}`
-      localStorage.removeItem(key)
-      return true
-    } catch (error) {
-      console.error('Failed to delete:', error)
-      return false
-    }
+  async init() {
+    await migrateFromLocalStorage()
   },
 
   /**
-   * List all saved startups
+   * Delete document from storage
    */
-  listAll() {
-    const startups = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith(STORAGE_PREFIX)) {
-        const id = key.replace(`${STORAGE_PREFIX}-`, '')
-        const data = this.load(id)
-        if (data) {
-          startups.push({ id, ...data })
-        }
-      }
+  async delete(startupId) {
+    try {
+      const storageKey = getKey(startupId)
+      await del(storageKey)
+      return true
+    } catch (error) {
+      console.error('Failed to delete from IDB:', error)
+      return false
     }
-    return startups
   }
 }
-
-// Future: API Storage Adapter
-// export const apiStorage = {
-//   async save(startupId, data) {
-//     return fetch(`/api/startups/${startupId}`, {
-//       method: 'PUT',
-//       body: JSON.stringify(data)
-//     })
-//   },
-//   async load(startupId) {
-//     return fetch(`/api/startups/${startupId}`).then(r => r.json())
-//   }
-// }

@@ -11,11 +11,15 @@ export function ThemeProvider({ children }) {
     // Check local storage or system preference
     const savedTheme = localStorage.getItem('apricity-theme')
     if (savedTheme) {
-      setTheme(savedTheme)
-      document.documentElement.setAttribute('data-theme', savedTheme)
+      setTimeout(() => {
+        setTheme(savedTheme)
+        document.documentElement.setAttribute('data-theme', savedTheme)
+      }, 0)
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
-      document.documentElement.setAttribute('data-theme', 'dark')
+      setTimeout(() => {
+        setTheme('dark')
+        document.documentElement.setAttribute('data-theme', 'dark')
+      }, 0)
     }
   }, [])
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import * as Icons from 'lucide-react'
 
 /**
@@ -76,13 +77,13 @@ export default function ViewPage() {
           <span className="text-lg">🍊</span>
           <span className="font-medium text-primary">Apricity</span>
         </div>
-        <a 
+        <Link 
           href="/"
           className="text-sm text-secondary hover:text-primary transition-colors flex items-center gap-1"
         >
           <Icons.ArrowLeft className="w-4 h-4" />
           Back to workspace
-        </a>
+        </Link>
       </header>
 
       {/* Main content */}
@@ -178,13 +179,13 @@ export default function ViewPage() {
             <p className="text-secondary mb-6">
               {error || 'Failed to generate view. Please try again.'}
             </p>
-            <a
+            <Link
               href="/"
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-main rounded-lg hover:bg-secondary transition-colors"
             >
               <Icons.ArrowLeft className="w-4 h-4" />
               Back to workspace
-            </a>
+            </Link>
           </div>
         )}
       </main>

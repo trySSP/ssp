@@ -25,16 +25,17 @@ export default function Editor() {
   
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [titleValue, setTitleValue] = useState('')
+  const [titleValue, setTitleValue] = useState(activeDocument?.title || '')
+  const [prevDocId, setPrevDocId] = useState(activeDocument?.id)
   const titleInputRef = useRef(null)
 
-  // Sync title value when document changes
-  useEffect(() => {
-    if (activeDocument) {
-      setTitleValue(activeDocument.title)
-      setIsEditingTitle(false)
-    }
-  }, [activeDocument?.id])
+  // Sync title value when document changes (Render-time adjustment pattern)
+  // This avoids the ESLint error about calling setState in useEffect
+  if (activeDocument && activeDocument.id !== prevDocId) {
+    setPrevDocId(activeDocument.id)
+    setTitleValue(activeDocument.title)
+    setIsEditingTitle(false)
+  }
 
   // Focus input when editing starts
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function Editor() {
       editor.commands.clearContent()
       lastDocIdRef.current = null
     }
-  }, [editor, activeDocument])
+  }, [editor, activeDocument, isLoaded])
 
   if (!isLoaded) {
     return (
