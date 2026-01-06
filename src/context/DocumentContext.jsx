@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react'
 import { storage } from '@/utils/storage'
-import { calculateCoverage } from '@/utils/coverage'
+
+import { calculateCoverage, getCharCount } from '@/utils/coverage'
 
 // Storage key for workspace
 const WORKSPACE_KEY = 'apricity-workspace'
@@ -253,7 +254,17 @@ export function DocumentProvider({ children }) {
   const activeDocument = state.activeDocId ? state.documents[state.activeDocId] : null
 
   // Calculate coverage for active document
-  const coverage = activeDocument ? calculateCoverage(activeDocument.content) : 0
+  // Calculate total coverage across all documents
+  const coverage = Object.values(state.documents).reduce((acc, doc) => {
+    // Calculate individual max 100% just in case, or just sum chars?
+    // Better to sum chars then calculate percentage against a larger target or same target?
+    // If target is "10k chars to be happy", then sum of chars against 10k.
+    return acc + getCharCount(doc.content)
+  }, 0)
+  
+  // Calculate percentage against target (using same default as before for now)
+  // We can treat the target as "Workspace Target"
+  const coveragePercentage = Math.min(100, Math.round((coverage / 10000) * 100))
 
   // Get documents as sorted array
   const documentList = Object.values(state.documents).sort(
@@ -351,7 +362,7 @@ export function DocumentProvider({ children }) {
     activeFileId: state.activeFileId,
     activeFile,
     saveStatus: state.saveStatus,
-    coverage,
+    coverage: coveragePercentage,
     isLoaded: state.isLoaded,
     setStartupName,
     createDocument,

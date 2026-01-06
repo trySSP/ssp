@@ -123,50 +123,50 @@ export default function Editor() {
 
   if (!activeDocument) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50/50">
-        <div className="text-center">
-          <Icons.FileText className="w-10 h-10 text-gray-200 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">
-            Select a document or create a new one<br />
-            using the <span className="font-medium">+</span> button
-          </p>
-        </div>
+      <div className="flex-1 flex items-center justify-center bg-surface/50">
+      <div className="text-center">
+        <Icons.FileText className="w-10 h-10 text-border-subtle mx-auto mb-4" />
+        <p className="text-faint text-sm">
+          Select a document to start writing<br />
+          or create a new one
+        </p>
       </div>
+    </div>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
-      {/* Document header */}
-      <div className="px-16 pt-8 pb-4 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <span className="text-gray-400">
-            {getIcon(activeDocument.icon, 'w-6 h-6')}
-          </span>
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={handleTitleSubmit}
-              onKeyDown={handleTitleKeyDown}
-              className="text-xl font-medium text-gray-900 bg-transparent border-b border-gray-300 outline-none py-0.5 min-w-[200px]"
-            />
-          ) : (
-            <button
-              onClick={() => setIsEditingTitle(true)}
-              className="text-xl font-medium text-gray-900 hover:text-gray-600 transition-colors flex items-center gap-2 group"
-            >
-              {activeDocument.title}
-              <Icons.Pencil className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          )}
+    <div className="flex-1 flex flex-col items-center loading-fade-in relative">
+        {/* Document Header with Title */}
+        <div className="w-full max-w-3xl px-16 pt-8 pb-4 flex items-center gap-3">
+          <div className="text-accent-primary">
+            {getIcon(activeDocument.icon, 'w-8 h-8')}
+          </div>
+          <div className="flex-1">
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleTitleSubmit}
+                onKeyDown={handleTitleKeyDown}
+                className="w-full text-3xl font-medium text-primary bg-transparent border-b border-border-subtle outline-none py-1"
+                placeholder="Untitled"
+              />
+            ) : (
+              <h1 
+                onClick={() => setIsEditingTitle(true)}
+                className="text-3xl font-medium text-primary hover:text-secondary transition-colors cursor-text py-1 border-b border-transparent hover:border-border-subtle"
+              >
+                {activeDocument.title || 'Untitled'}
+              </h1>
+            )}
+          </div>
         </div>
+
+        <EditorContent editor={editor} className="flex-1 w-full max-w-3xl" />
       </div>
-      
-      <EditorContent editor={editor} />
-    </div>
   )
 }
 

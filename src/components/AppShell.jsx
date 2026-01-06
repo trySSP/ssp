@@ -1,6 +1,7 @@
 'use client'
 
 import { DocumentProvider } from '@/context/DocumentContext'
+import { ThemeProvider } from '@/context/ThemeContext'
 import TopBar from './TopBar'
 import LeftRail from './LeftRail'
 import ContentViewer from './ContentViewer'
@@ -8,7 +9,7 @@ import CoverageBar from './CoverageBar'
 
 function AppShellContent() {
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-main text-primary">
       <TopBar />
       
       <div className="flex-1 flex overflow-hidden">
@@ -26,8 +27,10 @@ function AppShellContent() {
 
 export default function AppShell() {
   return (
-    <DocumentProvider>
-      <AppShellContent />
-    </DocumentProvider>
+    <ThemeProvider>
+      <DocumentProvider>
+        <AppShellContent />
+      </DocumentProvider>
+    </ThemeProvider>
   )
 }

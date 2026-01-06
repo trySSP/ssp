@@ -2,10 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import * as Icons from 'lucide-react'
 import { useDocument } from '@/context/DocumentContext'
+import { useTheme } from '@/context/ThemeContext'
 
 export default function TopBar() {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
   const { startupName, setStartupName, saveStatus } = useDocument()
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(startupName)
@@ -70,8 +73,8 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-12 px-4 flex items-center justify-between border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-2">
+    <header className="h-14 px-6 flex items-center justify-between border-b border-border-subtle bg-main">
+      <div className="flex items-center gap-3">
         <span className="text-base">🍊</span>
         {isEditing ? (
           <input
@@ -81,16 +84,16 @@ export default function TopBar() {
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={handleSubmit}
             onKeyDown={handleKeyDown}
-            className="text-sm font-medium text-gray-900 bg-transparent border-b border-gray-300 outline-none px-0 py-0.5 min-w-[120px]"
+            className="text-sm font-medium text-primary bg-transparent border-b border-border-subtle outline-none px-0 py-0.5 min-w-[120px]"
           />
         ) : (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors flex items-center gap-1 group"
+            className="text-sm font-medium text-primary hover:text-secondary transition-colors flex items-center gap-1 group"
           >
             {startupName}
             <svg 
-              className="w-3 h-3 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" 
+              className="w-3 h-3 text-faint opacity-0 group-hover:opacity-100 transition-opacity" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
@@ -109,9 +112,23 @@ export default function TopBar() {
             const viewId = crypto.randomUUID()
             router.push(`/${viewId}`)
           }}
-          className="px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-md transition-all duration-200 hover:text-orange-500 hover:border-orange-400 hover:bg-orange-50"
+          className="px-3 py-1.5 text-xs font-medium text-secondary border border-border-subtle rounded-md transition-all duration-200 hover:text-accent-primary hover:border-accent-primary hover:bg-orange-50/10"
         >
           Develop a View
+        </button>
+
+        <div className="w-px h-4 bg-border-subtle" />
+
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 text-secondary hover:text-primary rounded-md hover:bg-surface transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <Icons.Sun className="w-4 h-4" />
+          ) : (
+            <Icons.Moon className="w-4 h-4" />
+          )}
         </button>
       </div>
     </header>

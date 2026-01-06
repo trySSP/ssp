@@ -17,27 +17,27 @@ export default function PDFViewer({ file }) {
 
   if (!file) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50/50">
+      <div className="flex-1 flex items-center justify-center bg-surface/50">
         <div className="text-center">
-          <Icons.FileType className="w-10 h-10 text-gray-200 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">No PDF selected</p>
+          <Icons.FileType className="w-10 h-10 text-border-subtle mx-auto mb-4" />
+          <p className="text-faint text-sm">No PDF selected</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-gray-100">
+    <div className="flex-1 flex flex-col overflow-hidden bg-main">
       {/* PDF Header */}
-      <div className="px-6 py-4 bg-white border-b border-gray-200">
+      <div className="px-6 py-4 bg-surface border-b border-border-subtle">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-red-500">
+            <span className="text-accent-primary">
               <Icons.FileType className="w-6 h-6" />
             </span>
             <div>
-              <h1 className="text-lg font-medium text-gray-900">{file.name}</h1>
-              <p className="text-xs text-gray-400">
+              <h1 className="text-lg font-medium text-primary">{file.name}</h1>
+              <p className="text-xs text-secondary">
                 {formatFileSize(file.size)} • Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
               </p>
             </div>
@@ -47,24 +47,24 @@ export default function PDFViewer({ file }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setZoom(Math.max(50, zoom - 25))}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-main text-secondary hover:text-primary transition-colors"
               aria-label="Zoom out"
             >
               <Icons.ZoomOut className="w-4 h-4" />
             </button>
-            <span className="text-sm text-gray-500 w-12 text-center">{zoom}%</span>
+            <span className="text-sm text-faint w-12 text-center">{zoom}%</span>
             <button
               onClick={() => setZoom(Math.min(200, zoom + 25))}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-main text-secondary hover:text-primary transition-colors"
               aria-label="Zoom in"
             >
               <Icons.ZoomIn className="w-4 h-4" />
             </button>
-            <div className="w-px h-6 bg-gray-200 mx-2" />
+            <div className="w-px h-6 bg-border-subtle mx-2" />
             <a
               href={file.data}
               download={file.name}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-main text-secondary hover:text-primary transition-colors"
               aria-label="Download PDF"
             >
               <Icons.Download className="w-4 h-4" />

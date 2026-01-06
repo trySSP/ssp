@@ -7,20 +7,24 @@
  */
 
 export const ARTIFACT_TEMPLATES = [
-  {
-    id: 'overview',
-    title: 'Overview',
-    icon: 'ClipboardList',
-    description: 'High-level summary of your startup',
-    defaultContent: `## Overview
+    {
+    id: 'problem-statement',
+    title: 'Problem Statement',
+    icon: 'Target',
+    description: 'Define the problem you are solving',
+    defaultContent: `## Problem Statement
 
-Describe your startup in a few sentences. What problem are you solving and for whom?
+### The Problem
+What pain point or gap exists in the market?
 
-### Vision
-What does success look like in 5 years?
+### Who Experiences This?
+Describe your target user in detail.
 
-### Mission
-What are you building today to get there?
+### Current Alternatives
+How do people solve this problem today?
+
+### Why Now?
+What has changed that makes this the right time?
 `
   },
   {
@@ -44,26 +48,6 @@ Share your journey — what led you here?
 
 ### Why This Problem?
 What makes you uniquely positioned to solve this?
-`
-  },
-  {
-    id: 'problem-statement',
-    title: 'Problem Statement',
-    icon: 'Target',
-    description: 'Define the problem you are solving',
-    defaultContent: `## Problem Statement
-
-### The Problem
-What pain point or gap exists in the market?
-
-### Who Experiences This?
-Describe your target user in detail.
-
-### Current Alternatives
-How do people solve this problem today?
-
-### Why Now?
-What has changed that makes this the right time?
 `
   },
   {
