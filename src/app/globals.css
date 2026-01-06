@@ -3,24 +3,204 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --border-light: #ededed;
+  --text-muted: #9ca3af;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: calc(100vh - 8rem);
+}
+
+.ProseMirror p {
+  margin: 0.5em 0;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 1.5em 0 0.5em;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.25em 0 0.5em;
+  color: #111827;
+  line-height: 1.3;
+  padding-left: 0.5em;
+  border-left: 3px solid #e5e7eb;
+}
+
+.ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 1em 0 0.25em;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.ProseMirror li {
+  margin: 0.25em 0;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.ProseMirror li::marker {
+  color: #9ca3af;
+}
+
+.ProseMirror strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror code {
+  background: #f3f4f6;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2em 0;
+}
+
+/* Tables */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.ProseMirror th {
+  background: #f9fafb;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Placeholder styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror.is-editor-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Empty editor state */
+.is-editor-empty .ProseMirror::before {
+  content: "Give your startup a place to think...";
+  color: #9ca3af;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Radix Dropdown animations */
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+[data-state="open"] > [data-radix-dropdown-menu-content] {
+  animation: slideRightAndFade 150ms ease-out;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
 }
