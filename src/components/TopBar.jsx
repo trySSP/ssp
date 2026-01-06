@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useDocument } from '@/context/DocumentContext'
 
 export default function TopBar() {
+  const router = useRouter()
   const { startupName, setStartupName, saveStatus } = useDocument()
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(startupName)
@@ -102,6 +104,11 @@ export default function TopBar() {
       <div className="flex items-center gap-4">
         {getSaveIndicator()}
         <button
+          onClick={() => {
+            // Generate UUID and navigate to view page
+            const viewId = crypto.randomUUID()
+            router.push(`/${viewId}`)
+          }}
           className="px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-md transition-all duration-200 hover:text-orange-500 hover:border-orange-400 hover:bg-orange-50"
         >
           Develop a View
