@@ -108,6 +108,8 @@ async def view_analysis(request: StartupRequest):
         # Catch specific configuration errors
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

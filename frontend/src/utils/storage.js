@@ -25,7 +25,14 @@ async function migrateFromLocalStorage() {
       if (key?.startsWith(STORAGE_PREFIX)) {
         try {
           // Read from LS
-          const data = JSON.parse(localStorage.getItem(key))
+          // Read from LS
+          const raw = localStorage.getItem(key)
+          let data
+          try {
+            data = JSON.parse(raw)
+          } catch {
+            data = raw
+          }
           
           // Write to IDB
           await set(key, data)
