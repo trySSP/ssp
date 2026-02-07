@@ -75,10 +75,17 @@ export default function ViewPage() {
             throw new Error(data.error)
           }
 
-          updateView(viewId, {
-            status: 'completed',
-            data: data.analysis
-          })
+         updateView(viewId, {
+  status: 'completed',
+  data: data
+})
+
+
+updateView(viewId, {
+  status: 'completed',
+  data: data 
+})
+
         } catch (error) {
           console.error('View generation failed:', error)
           updateView(viewId, {
@@ -229,8 +236,20 @@ export default function ViewPage() {
               </div>
               
               <div className="prose prose-sm max-w-none text-secondary">
-                <div className="whitespace-pre-wrap">{view.data}</div>
-              </div>
+  {view.data && typeof view.data === 'object' &&
+    Object.entries(view.data).map(([key, value]) => (
+      <div key={key} className="mb-6">
+        <h3 className="text-sm font-semibold uppercase text-primary mb-2">
+          {key.replace(/_/g, ' ')}
+        </h3>
+        <div className="whitespace-pre-wrap">
+          {value}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
             </div>
           </div>
         )}
