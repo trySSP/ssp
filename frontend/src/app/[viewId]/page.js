@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
 import { useDocument } from '@/context/DocumentContext'
+import ExportPDFButton from '@/components/ExportPDFButton'
 
 /**
  * View Processing Page
@@ -20,6 +21,22 @@ const STAGES = [
   { id: 'processing', label: 'Processing with AI', icon: 'Sparkles' },
   { id: 'generating', label: 'Generating view', icon: 'Layout' }
 ]
+
+function renderResultValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return <span className="text-faint">Unknown</span>
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return <div className="whitespace-pre-wrap">{String(value)}</div>
+  }
+
+  return (
+    <pre className="whitespace-pre-wrap text-xs bg-surface border border-border-subtle rounded-lg p-3 overflow-x-auto">
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  )
+}
 
 export default function ViewPage() {
   const params = useParams()
@@ -75,16 +92,10 @@ export default function ViewPage() {
             throw new Error(data.error)
           }
 
-         updateView(viewId, {
-  status: 'completed',
-  data: data
-})
-
-
-updateView(viewId, {
-  status: 'completed',
-  data: data 
-})
+          updateView(viewId, {
+            status: 'completed',
+            data
+          })
 
         } catch (error) {
           console.error('View generation failed:', error)
@@ -143,13 +154,18 @@ updateView(viewId, {
           <span className="text-lg">🍊</span>
           <span className="font-medium text-primary">Apricity</span>
         </div>
-        <Link 
-          href="/"
-          className="text-sm text-secondary hover:text-primary transition-colors flex items-center gap-1"
-        >
-          <Icons.ArrowLeft className="w-4 h-4" />
-          Back to workspace
-        </Link>
+        <div className="flex items-center gap-4">
+          {view.status === 'completed' && view.data && (
+            <ExportPDFButton data={view.data} viewId={viewId} />
+          )}
+          <Link 
+            href="/"
+            className="text-sm text-secondary hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <Icons.ArrowLeft className="w-4 h-4" />
+            Back to workspace
+          </Link>
+        </div>
       </header>
 
       {/* Main content */}
@@ -236,19 +252,17 @@ updateView(viewId, {
               </div>
               
               <div className="prose prose-sm max-w-none text-secondary">
-  {view.data && typeof view.data === 'object' &&
-    Object.entries(view.data).map(([key, value]) => (
-      <div key={key} className="mb-6">
-        <h3 className="text-sm font-semibold uppercase text-primary mb-2">
-          {key.replace(/_/g, ' ')}
-        </h3>
-        <div className="whitespace-pre-wrap">
-          {value}
-        </div>
-      </div>
-    ))
-  }
-</div>
+                {view.data && typeof view.data === 'object' &&
+                  Object.entries(view.data).map(([key, value]) => (
+                    <div key={key} className="mb-6">
+                      <h3 className="text-sm font-semibold uppercase text-primary mb-2">
+                        {key.replace(/_/g, ' ')}
+                      </h3>
+                      {renderResultValue(value)}
+                    </div>
+                  ))
+                }
+              </div>
 
             </div>
           </div>

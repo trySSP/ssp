@@ -30,7 +30,8 @@ An AI-powered tool that helps founders articulate their startup vision and recei
 
 - **Node.js** 18+ and **Bun**
 - **Python** 3.13+ and **uv**
-- **OpenAI API Key** (for backend analysis)
+- **OpenAI API Key** (for backend analysis + summarization)
+- **Exa API Key** (for competitor company discovery)
 
 ## Quick Start
 
@@ -39,8 +40,8 @@ An AI-powered tool that helps founders articulate their startup vision and recei
 make install
 
 # Set up environment (backend)
-cp backend/.env.example backend/.env
-# Add your OPENAI_API_KEY to backend/.env
+cp backend/.example.env backend/.env
+# Add OPENAI_API_KEY and EXA_API_KEY to backend/.env
 
 # Run both services
 make dev
@@ -77,16 +78,4 @@ uv run uvicorn main:app --reload --port 8000
 | Service  | File                  | Variables        |
 | -------- | --------------------- | ---------------- |
 | Frontend | `frontend/.env.local` | (optional)       |
-| Backend  | `backend/.env`        | `OPENAI_API_KEY` |
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
+| Backend  | `backend/.env`        | `OPENAI_API_KEY`, `EXA_API_KEY`, `OPENAI_ANALYSIS_MODEL` (optional), `OPENAI_SUMMARIZER_MODEL` (optional), `EXA_COMPETITOR_LIMIT` (optional), `X_BEARER_TOKEN` (optional), `REDDIT_USER_AGENT` (optional), `SOCIAL_SIGNAL_LIMIT_PER_SOURCE` (optional), `SOCIAL_SIGNAL_TIMEOUT_SECONDS` (optional), `SOCIAL_SIGNAL_INCLUDE_HN` (optional) |

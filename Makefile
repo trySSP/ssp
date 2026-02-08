@@ -7,14 +7,14 @@ dev:
 
 # Frontend commands
 frontend:
-	cd frontend && bun run dev
+	cd frontend && bun install && bun run dev
 
 install-frontend:
 	cd frontend && bun install
 
 # Backend commands
 backend:
-	cd backend && uv run uvicorn main:app --reload --port 8000
+	cd backend && uv sync && uv run uvicorn main:app --reload --port 8000
 
 install-backend:
 	cd backend && uv sync

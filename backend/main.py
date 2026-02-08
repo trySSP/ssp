@@ -1,9 +1,12 @@
+import asyncio
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Any, Dict
 
+from company_search import CompanySearchService
+# from social_signals import SocialSignalsService
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
@@ -23,13 +26,17 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY not set")
 
-llm = ChatOpenAI(
-    model="gpt-4o",
+ANALYSIS_MODEL = os.getenv("OPENAI_ANALYSIS_MODEL", "gpt-4o")
+
+analysis_llm = ChatOpenAI(
+    model=ANALYSIS_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0.3
 )
 
 embeddings = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
+company_search_service = CompanySearchService.from_env(OPENAI_API_KEY)
+# social_signals_service = SocialSignalsService.from_env()
 
 # -------------------------------------------------------------------
 # Shared RAG Utilities
@@ -114,7 +121,7 @@ async def financial_agent(state):
     chain = (
         {"context": retriever | format_docs}
         | FINANCIAL_PROMPT
-        | llm
+        | analysis_llm
         | StrOutputParser()
     )
     return {"financial": await chain.ainvoke("")}
@@ -125,7 +132,7 @@ async def vc_agent(state):
     chain = (
         {"context": retriever | format_docs}
         | VC_PROMPT
-        | llm
+        | analysis_llm
         | StrOutputParser()
     )
     return {"vc": await chain.ainvoke("")}
@@ -136,7 +143,7 @@ async def cto_agent(state):
     chain = (
         {"context": retriever | format_docs}
         | CTO_PROMPT
-        | llm
+        | analysis_llm
         | StrOutputParser()
     )
     return {"cto": await chain.ainvoke("")}
@@ -147,7 +154,7 @@ async def marketing_agent(state):
     chain = (
         {"context": retriever | format_docs}
         | MARKETING_PROMPT
-        | llm
+        | analysis_llm
         | StrOutputParser()
     )
     return {"marketing": await chain.ainvoke("")}
@@ -158,7 +165,7 @@ async def product_agent(state):
     chain = (
         {"context": retriever | format_docs}
         | PRODUCT_PROMPT
-        | llm
+        | analysis_llm
         | StrOutputParser()
     )
     return {"product": await chain.ainvoke("")}
@@ -215,17 +222,55 @@ async def view_analysis(request: StartupRequest):
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-    result = await app_graph.ainvoke({
+    analysis_task = app_graph.ainvoke({
         "retriever": build_retriever(request.prompt)
     })
+    competitors_task = company_search_service.find_top_competitors_for_idea(request.prompt)
+    # social_signals_task = social_signals_service.summarize_customer_voice_signals(request.prompt)
 
-    return {
-        "financial_analysis": result.get("financial"),
-        "vc_analysis": result.get("vc"),
-        "cto_analysis": result.get("cto"),
-        "marketing_analysis": result.get("marketing"),
-        "product_analysis": result.get("product")
+    (
+        analysis_result, 
+        competitors_result, 
+        # social_signals_result
+    ) = await asyncio.gather(
+        analysis_task,
+        competitors_task,
+        # social_signals_task,
+        return_exceptions=True
+    )
+
+    if isinstance(analysis_result, Exception):
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {analysis_result}")
+
+    response: Dict[str, Any] = {
+        "financial_analysis": analysis_result.get("financial"),
+        "vc_analysis": analysis_result.get("vc"),
+        "cto_analysis": analysis_result.get("cto"),
+        "marketing_analysis": analysis_result.get("marketing"),
+        "product_analysis": analysis_result.get("product")
     }
+
+    if isinstance(competitors_result, Exception):
+        response.update({
+            "competitor_search_status": "error",
+            "idea_search_sentence": None,
+            "competitors": [],
+            "competitor_search_error": str(competitors_result)
+        })
+    else:
+        response.update({
+            "competitor_search_status": competitors_result.get("status"),
+            "idea_search_sentence": competitors_result.get("search_sentence"),
+            "competitors": competitors_result.get("competitors", []),
+            "competitor_search_error": competitors_result.get("error")
+        })
+
+    # if isinstance(social_signals_result, Exception):
+    #     response["customer_voice_pmf_signal"] = "Customer-voice PMF signal is unavailable due to social-source collection error."
+    # else:
+    #     response["customer_voice_pmf_signal"] = social_signals_result
+
+    return response
 
 
 
