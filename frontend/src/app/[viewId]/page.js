@@ -22,6 +22,21 @@ const STAGES = [
   { id: 'generating', label: 'Generating view', icon: 'Layout' }
 ]
 
+function dataUrlToBlob(dataUrl) {
+  const [meta, base64] = dataUrl.split(',')
+  if (!meta || !base64) {
+    throw new Error('Invalid file data')
+  }
+  const byteString = atob(base64)
+  const mimeMatch = meta.match(/data:(.*?);base64/)
+  const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream'
+  const bytes = new Uint8Array(byteString.length)
+  for (let i = 0; i < byteString.length; i += 1) {
+    bytes[i] = byteString.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: mimeType })
+}
+
 function renderResultValue(value) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-faint">Unknown</span>
@@ -42,7 +57,7 @@ export default function ViewPage() {
   const params = useParams()
   const viewId = params.viewId
   
-  const { views, updateView, isLoaded } = useDocument()
+  const { views, updateView, isLoaded, fileList } = useDocument()
   const view = views?.[viewId]
   
   const [currentStage, setCurrentStage] = useState(0)
@@ -72,14 +87,20 @@ export default function ViewPage() {
 
       (async () => {
         try {
+          const formData = new FormData()
+          formData.append('prompt', view.content)
+
+          if (fileList?.length) {
+            for (const file of fileList) {
+              if (!file?.data || file.type !== 'application/pdf') continue
+              const blob = dataUrlToBlob(file.data)
+              formData.append('files', new File([blob], file.name, { type: file.type }))
+            }
+          }
+
           const response = await fetch('/api/views', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              prompt: view.content
-            })
+            body: formData
           })
 
           if (!response.ok) {
@@ -108,7 +129,7 @@ export default function ViewPage() {
         }
       })()
     }
-  }, [isLoaded, view, viewId, updateView])
+  }, [isLoaded, view, viewId, updateView, fileList])
 
   // Get icon component
   const getIcon = (iconName, className = 'w-5 h-5') => {

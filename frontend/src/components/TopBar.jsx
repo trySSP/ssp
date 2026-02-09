@@ -11,7 +11,7 @@ import { extractText } from '@/utils/coverage'
 export default function TopBar() {
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
-  const { startupName, setStartupName, saveStatus, documents, createView } = useDocument()
+  const { startupName, setStartupName, saveStatus, documents, createView, fileList } = useDocument()
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(startupName)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -136,6 +136,12 @@ export default function TopBar() {
 
       <div className="flex items-center gap-4">
         {getSaveIndicator()}
+        {fileList?.length > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-secondary bg-surface border border-border-subtle rounded-md px-2 py-1">
+            <Icons.FileType className="w-3.5 h-3.5 text-faint" />
+            <span>{fileList.length} PDF{fileList.length > 1 ? 's' : ''} attached</span>
+          </div>
+        )}
         <button
           onClick={handleDevelopView}
           disabled={isGenerating}

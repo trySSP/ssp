@@ -2,10 +2,21 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { prompt } = body;
+    const contentType = request.headers.get("content-type") || "";
+    let formData;
 
-    if (!prompt) {
+    if (contentType.includes("multipart/form-data")) {
+      formData = await request.formData();
+    } else {
+      const body = await request.json().catch(() => ({}));
+      formData = new FormData();
+      if (body?.prompt) {
+        formData.append("prompt", body.prompt);
+      }
+    }
+
+    const prompt = formData.get("prompt");
+    if (!prompt || String(prompt).trim() === "") {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
@@ -16,10 +27,7 @@ export async function POST(request) {
       // Forward to Python backend
       const response = await fetch(`${backendUrl}/view`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt }),
+        body: formData,
       });
 
       if (!response.ok) {

@@ -48,9 +48,13 @@ export default function LeftRail() {
   }
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (file && file.type === 'application/pdf') {
-      await uploadFile(file)
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      for (const file of files) {
+        if (file.type === 'application/pdf') {
+          await uploadFile(file)
+        }
+      }
     }
     // Reset input
     if (fileInputRef.current) {
@@ -75,6 +79,7 @@ export default function LeftRail() {
         ref={fileInputRef}
         type="file"
         accept=".pdf,application/pdf"
+        multiple
         onChange={handleFileUpload}
         className="hidden"
       />
