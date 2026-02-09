@@ -1,20 +1,20 @@
 import asyncio
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from typing import Any, Dict
 
 from company_search import CompanySearchService
 # from social_signals import SocialSignalsService
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from langgraph.graph import StateGraph, END
+
+from pdf_ingest import extract_pdf_text
+from text_chunking import chunk_text
 
 # -------------------------------------------------------------------
 # Setup
@@ -42,13 +42,9 @@ company_search_service = CompanySearchService.from_env(OPENAI_API_KEY)
 # Shared RAG Utilities
 # -------------------------------------------------------------------
 def build_retriever(content: str):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
-
-    docs = [Document(page_content=content)]
-    chunks = splitter.split_documents(docs)
+    chunks = chunk_text(content)
+    if not chunks:
+        raise ValueError("No content available to index")
 
     vector_store = Chroma.from_documents(chunks, embeddings)
     return vector_store.as_retriever()
@@ -209,23 +205,34 @@ app_graph = graph.compile()
 
 
 # -------------------------------------------------------------------
-# API Schema
-# -------------------------------------------------------------------
-class StartupRequest(BaseModel):
-    prompt: str
-
-# -------------------------------------------------------------------
 # API Endpoint
 # -------------------------------------------------------------------
 @app.post("/view")
-async def view_analysis(request: StartupRequest):
-    if not request.prompt.strip():
+async def view_analysis(
+    prompt: str = Form(...),
+    files: list[UploadFile] | None = File(None)
+):
+    if not prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
+    extracted_texts: list[str] = []
+    if files:
+        for upload in files:
+            try:
+                file_bytes = await upload.read()
+                extracted_texts.append(extract_pdf_text(file_bytes))
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"PDF extraction failed for {upload.filename}: {exc}"
+                )
+
+    combined_text = "\n\n".join([text for text in [prompt, *extracted_texts] if text])
+
     analysis_task = app_graph.ainvoke({
-        "retriever": build_retriever(request.prompt)
+        "retriever": build_retriever(combined_text)
     })
-    competitors_task = company_search_service.find_top_competitors_for_idea(request.prompt)
+    competitors_task = company_search_service.find_top_competitors_for_idea(prompt)
     # social_signals_task = social_signals_service.summarize_customer_voice_signals(request.prompt)
 
     (
